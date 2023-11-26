@@ -1,3 +1,4 @@
+import json
 import time
 from typing import Union
 from fastapi import FastAPI
@@ -25,12 +26,28 @@ app.add_middleware(
 def read_root():
     return {"Hello": "World"}
 
-@app.get("/api/http_stream")
+@app.get("/api/http_stream_text")
 def http_stream():
     def generator():
         while True:
             yield  "test"
             yield  "test2"
+            time.sleep(1)
+    return StreamingResponse(generator(), media_type="text/event-stream")
+
+@app.get("/api/http_stream_json")
+def http_stream():
+    def generator():
+        while True:
+            yield  json.dumps({"test": "test", "null": None})
+            time.sleep(1)
+    return StreamingResponse(generator(), media_type="text/event-stream")
+
+@app.get("/api/http_stream_video")
+def http_stream():
+    def generator():
+        while True:
+            yield  json.dumps({"test": "test", "null": None})
             time.sleep(1)
     return StreamingResponse(generator(), media_type="text/event-stream")
 
