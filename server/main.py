@@ -1,9 +1,10 @@
 import json
 import time
-from typing import Union
+from typing import AsyncGenerator, Generator, List, Union
 from fastapi import FastAPI
 from fastapi.responses import StreamingResponse
 from fastapi.middleware.cors import CORSMiddleware
+from pydantic import BaseModel
 
 app = FastAPI()
 
@@ -27,24 +28,29 @@ def read_root():
     return {"Hello": "World"}
 
 @app.get("/api/http_stream_text")
-def http_stream():
+def http_stream_text():
     def generator():
-        while True:
+        count = 5
+        while count != 0:
             yield  "test"
-            yield  "test2"
+            count -= 1
             time.sleep(1)
     return StreamingResponse(generator(), media_type="text/event-stream")
 
+class HttpStreamJsonResponse(BaseModel):
+    test: str
+    null: Union[str, None]
+    
 @app.get("/api/http_stream_json")
-def http_stream():
+async def http_stream_json() -> Generator[str, None,None]:
     def generator():
         while True:
-            yield  json.dumps({"test": "test", "null": None})
-            time.sleep(1)
+            yield  HttpStreamJsonResponse(test="test", null=None).model_dump_json()
+            time.sleep(2)
     return StreamingResponse(generator(), media_type="text/event-stream")
 
 @app.get("/api/http_stream_video")
-def http_stream():
+def http_stream_video():
     def generator():
         while True:
             yield  json.dumps({"test": "test", "null": None})

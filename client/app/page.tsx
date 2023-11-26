@@ -1,42 +1,48 @@
 // @ts-nocheck
 'use client';
-import Image from 'next/image';
+
 import { useState, MouseEvent } from 'react';
-import axios from 'axios';
 import { streamAsyncIterator } from '@/libs/asyncIterator';
-import { randomUUID } from 'crypto';
+
+let isReset = false;
+
 export default function Home() {
 	const [state, setState] = useState([]);
 
 	const streamSelectorHandler = async (e: MouseEvent<HTMLButtonElement>) => {
 		try {
+			isReset = false;
 			const streamType = e.currentTarget.textContent;
 
 			const response = await fetch(`http://localhost:8000/api/${streamType}`, {
 				method: 'GET',
 			});
+			const decoder = new TextDecoder();
 
-			const stream = response.body;
-
-			for await (const chunk of streamAsyncIterator({ stream: stream })) {
-				const value = chunk;
-
+			for await (const chunk of streamAsyncIterator(response.body)) {
+				const value = decoder.decode(chunk);
 				if (streamType === 'http_stream_json') {
 					const decodedValue = JSON.parse(value);
-					console.log("🚀 ~ file: page.tsx:26 ~ forawait ~ decodedValue:", decodedValue)
 					setState((p) => [...p, decodedValue]);
 				}
-				if (streamType === "http_stream_text") {
+				if (streamType === 'http_stream_text') {
 					setState((p) => [...p, value]);
 				}
+				if (isReset) {
+					break;
+				}
 			}
+			response.body.cancel();
 		} catch (error) {
-			console.error(error);
+			console.log(
+				'🚀 ~ file: page.tsx:37 ~ streamSelectorHandler ~ error:',
+				error
+			);
 		}
 	};
 
 	const resetHandler = () => {
-		setState([]);
+		isReset = true;
 	};
 	return (
 		<main className='fixed inset-0 grid grid-cols-2 justify-center items-center bg-base-100 text-base-content'>
